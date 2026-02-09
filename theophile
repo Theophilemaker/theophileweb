@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THEOPHILEMAKER E-Learning</title>
+<style>
+:root{
+  --bg:#0f1724;
+  --card:#0b1220;
+  --accent:#7c3aed;
+  --muted:#94a3b8;
+  --glass: rgba(255,255,255,0.04);
+  --radius:14px;
+  --hover-glow: rgba(124,58,237,0.4);
+  color-scheme: dark;
+  font-family: Arial, Helvetica, sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#071028 0%, #0b1230 100%);color:#e6eef8}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;flex-wrap:wrap}
+.brand{display:flex;gap:14px;align-items:center}
+.logo{width:64px;height:64px;border-radius:12px;overflow:hidden;background:linear-gradient(90deg,var(--accent),#4f46e5);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.logo img{width:100%;height:100%;object-fit:cover}
+.title{font-weight:800;font-size:18px}
+nav{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--glass);border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:10px;color:white;cursor:pointer;text-decoration:none;transition:0.3s}
+.btn:hover{background:rgba(124,58,237,0.2);}
+.btn.primary{background:linear-gradient(90deg,var(--accent),#4f46e5);border:none}
+.container{max-width:1200px;margin:26px auto;padding:0 18px}
+.hero{display:grid;grid-template-columns:1fr 420px;gap:22px}
+.hero-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:22px;border-radius:var(--radius)}
+.small{font-size:13px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;margin-top:14px;justify-content:center}
+.card{background:var(--card);padding:18px;border-radius:12px;text-align:center;transition:0.3s;cursor:pointer;}
+.card:hover{transform:translateY(-5px);box-shadow:0 0 15px var(--hover-glow);}
+.footer{margin-top:40px;padding:24px;text-align:center;color:var(--muted);font-size:13px}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
+.modal.show{display:flex}
+.dialog{background:#071124;padding:18px;border-radius:12px;width:95%;max-width:700px}
+.subject{
+  background:#0b1220;
+  padding:12px;
+  border-radius:12px;
+  margin:8px;
+  text-align:center;
+  width:200px;
+  transition:0.3s;
+}
+.subject:hover{transform:translateY(-5px);box-shadow:0 0 12px var(--hover-glow);}
+.subject h4{margin:0 0 8px 0}
+.link-btn{
+  display:inline-block;
+  margin-top:6px;
+  margin-right:6px;
+  padding:6px 10px;
+  background:#1f2937;
+  border-radius:8px;
+  font-size:12px;
+  cursor:pointer;
+  text-decoration:none;
+}
+.item-img{
+  width:100%;
+  height:140px;
+  background:#111827;
+  border-radius:10px;
+  margin-bottom:8px;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:0.3s;
+}
+.item-img:hover{transform:scale(1.05);box-shadow:0 0 12px var(--hover-glow);}
+.item-img img{width:100%;height:100%;object-fit:cover}
+
+/* Responsive */
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;}
+  .hero-card{margin-bottom:20px;}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));}
+  .subject{width:90%;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo" id="logoDrop">
+      <img id="logoImg">
+      <span id="logoText" style="display:none;font-weight:bold">TM</span>
+    </div>
+    <div>
+      <div class="title">THEOPHILEMAKER E-Learning</div>
+      <div class="small">Learn more, Create, Share your possession</div>
+    </div>
+  </div>
+
+  <nav>
+    <button class="btn" id="adminBtn">Admin Login</button>
+    <a class="btn" href="#courseTypes">Online Courses</a>
+    <a class="btn" href="#servicesGrid">Our Services</a>
+    <a class="btn" href="#productsGrid">Our Products</a>
+    <a class="btn" href="#securitySection">Security</a>
+    <a class="btn primary" href="mailto:theophilen298@gmail.com">Contact</a>
+  </nav>
+</header>
+
+<main class="container">
+
+<section class="hero">
+  <div class="hero-card">
+    <h1>Welcome, THEOPHILEMAKER</h1>
+    <p class="small">Upload sessions, manage lessons and share knowledge.</p>
+
+    <div style="margin-top:12px">
+      <input id="globalSearch" placeholder="Search..." style="padding:10px;width:70%">
+      <button class="btn" id="createSessionBtn">New Session</button>
+    </div>
+
+    <div id="sessionsList" class="grid">
+      <div class="small">No sessions found. Add one!</div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="hero-card">
+      <h3>Quick Access</h3>
+      <div class="small">Admin can upload sessions and manage content.</div>
+      <div style="margin-top:10px">theophilen298@gmail.com</div>
+      <div style="margin-top:10px">
+        <button class="btn" id="replaceLogoBtn">Replace Logo</button>
+        <button class="btn" id="downloadDataBtn">Download Data</button>
+      </div>
+    </div>
+  </aside>
+</section>
+
+<section class="hero-card" style="margin-top:18px">
+  <h2>Our Services</h2>
+  <div class="grid" id="servicesGrid"></div>
+</section>
+
+<section class="hero-card" style="margin-top:18px">
+  <h2>Our Products</h2>
+  <div class="grid" id="productsGrid"></div>
+</section>
+
+<section class="hero-card" style="margin-top:18px">
+  <h2>Online Courses</h2>
+  <div id="courseTypes" style="display:flex;flex-wrap:wrap;justify-content:center;"></div>
+</section>
+
+<section id="securitySection" class="hero-card" style="margin-top:18px">
+  <h2>Security & Trust</h2>
+  <div class="small">
+    Most welcome. Your data is secured and protected.
+    Take what you want in the shortest time possible.
+  </div>
+</section>
+
+<!-- Session Modal -->
+<div id="sessionModal" class="modal">
+  <div class="dialog">
+    <h3>New Session</h3>
+    <input id="sessTitle" placeholder="Title"><br><br>
+    <textarea id="sessDesc" placeholder="Description"></textarea><br><br>
+    <select id="sessCourseType">
+      <option value="">--Select Course Type--</option>
+    </select><br><br>
+    <button class="btn primary" id="saveSessionBtn">Save</button>
+    <button class="btn" id="cancelSessionBtn">Cancel</button>
+  </div>
+</div>
+
+<div class="footer">
+Built for THEOPHILEMAKER • theophilen298@gmail.com
+</div>
+
+<script>
+// ================= DATA =================
+const ADMIN_PASSWORD = 'theo@123';
+const SESSIONS_KEY = 'tm_sessions_v1';
+const PRODUCTS_KEY = 'tm_products_v1';
+const SERVICES_KEY = 'tm_services_v1';
+const COURSES_KEY = 'tm_courses_v1';
+const $ = s => document.querySelector(s);
+let isAdmin=false;
+let sessions=JSON.parse(localStorage.getItem(SESSIONS_KEY)||'[]');
+
+// ================= SESSIONS =================
+const sessionsList = $('#sessionsList');
+const sessionModal = $('#sessionModal');
+function saveData(){localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions))}
+function uid(){return 's_'+Math.random().toString(36).slice(2,9)}
+
+function renderSessions(filter=''){
+  sessionsList.innerHTML='';
+  const q=filter.toLowerCase();
+  const out=sessions.filter(s=>s.title.toLowerCase().includes(q)||s.desc.toLowerCase().includes(q));
+  if(out.length===0){sessionsList.innerHTML='<div class="small">No sessions found.</div>';return;}
+  out.forEach(s=>{
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`<h3>${s.title}</h3><div class="small">${s.desc}</div>${isAdmin?`<button class="btn" onclick="del('${s.id}')">Delete</button>`:''}`;
+    sessionsList.appendChild(d);
+  });
+}
+renderSessions('');
+$('#globalSearch').addEventListener('input',e=>renderSessions(e.target.value));
+$('#createSessionBtn').addEventListener('click',()=>{if(!isAdmin){alert('Admin only');return;}sessionModal.classList.add('show');});
+$('#cancelSessionBtn').onclick=()=>sessionModal.classList.remove('show');
+
+// ================= COURSES =================
+const defaultCourseTypes={"Programming":["Python","HTML","JavaScript","Java","Visual Basic","C++","CSS"],"Database":["MySQL","SQL Server"],"Data Science":["Statistics","Mathematics","Probability"]};
+let courses=JSON.parse(localStorage.getItem(COURSES_KEY)||'null');
+if(!courses){courses={};for(const t in defaultCourseTypes){courses[t]=defaultCourseTypes[t].map((n,i)=>({id:t+'_'+i,name:n,file:'',image:'',video:''}));}localStorage.setItem(COURSES_KEY,JSON.stringify(courses));}
+function saveCourses(){localStorage.setItem(COURSES_KEY, JSON.stringify(courses));}
+
+function renderCourses(){
+  const box=document.getElementById('courseTypes');box.innerHTML='';
+  for(const t in courses){
+    const wrap=document.createElement('div');wrap.style.display='flex';wrap.style.flexWrap='wrap';wrap.style.justifyContent='center';wrap.style.margin='12px';
+    wrap.innerHTML=`<h3 style="width:100%;text-align:center;margin-bottom:12px">${t}</h3>`;
+    courses[t].forEach(sub=>{
+      const div=document.createElement('div');div.className='subject';
+      div.innerHTML=`<h4>${sub.name}</h4>
+        ${sub.image?`<img src="${sub.image}" style="width:140px;border-radius:8px"><br>`:''}
+        ${sub.video?`<video src="${sub.video}" controls style="width:180px;margin-top:6px"></video><br>`:''}
+        ${sub.file?`<a class="link-btn" href="${sub.file}" download>Download File</a>`:''}`;
+      wrap.appendChild(div);
+    });
+    box.appendChild(wrap);
+  }
+}
+
+// ================= ADMIN =================
+$('#adminBtn').addEventListener('click',()=>{
+  const p=prompt('Enter admin password');
+  if(p===ADMIN_PASSWORD){
+    isAdmin=true;
+    $('#adminBtn').textContent='Admin (ON)';
+    $('#adminBtn').style.background='#16a34a';
+    renderSessions(); renderProducts(); renderServices(); renderCourses();
+    populateCourseTypes();
+  } else alert('Wrong password');
+});
+
+function loadLogo(){
+  const src=localStorage.getItem('tm_logo');
+  if(src){$('#logoImg').src=src;$('#logoImg').style.display='block';$('#logoText').style.display='none';}
+  else{$('#logoImg').style.display='none';$('#logoText').style.display='block';}
+}
+loadLogo();
+$('#replaceLogoBtn').addEventListener('click',()=>{
+  if(!isAdmin){alert('Only admin can change logo');return;}
+  const f=document.createElement('input');f.type='file';f.accept='image/*';
+  f.onchange=()=>{const r=new FileReader();r.onload=()=>{localStorage.setItem('tm_logo',r.result);loadLogo();};r.readAsDataURL(f.files[0]);};
+  f.click();
+});
+$('#logoDrop').addEventListener('click',()=>{if(!isAdmin){alert('Only admin can change logo');return;}$('#replaceLogoBtn').click();});
+$('#downloadDataBtn').onclick=()=>{const blob=new Blob([JSON.stringify(sessions)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tm_data.json';a.click();};
+
+// ================= PRODUCTS & SERVICES =================
+const defaultProducts=['Telephone Batteries','Electrical Chargers','Computer Accessories','Keyboards & Mouse','Flash Disks'];
+const defaultServices=['Software Installation','Software Development','Computer Maintenance','System Analysis & Design'];
+let products=JSON.parse(localStorage.getItem(PRODUCTS_KEY)||'null');
+let services=JSON.parse(localStorage.getItem(SERVICES_KEY)||'null');
+if(!products) products=defaultProducts.map((n,i)=>({id:'p'+i,name:n,img:''}));
+if(!services) services=defaultServices.map((n,i)=>({id:'s'+i,name:n,img:''}));
+function saveProducts(){localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products))}
+function saveServices(){localStorage.setItem(SERVICES_KEY, JSON.stringify(services))}
+
+function renderProducts(){
+  const box=document.getElementById('productsGrid');box.innerHTML='';
+  products.forEach(p=>{
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`<div class="item-img" ${isAdmin?`onclick="uploadProductImage('${p.id}')"`:''}>${p.img?`<img src="${p.img}">`:'<span class="small">No image</span>'}</div><h3>${p.name}</h3>`;
+    box.appendChild(d);
+  });
+}
+
+function renderServices(){
+  const box=document.getElementById('servicesGrid');box.innerHTML='';
+  services.forEach(s=>{
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`<div class="item-img" ${isAdmin?`onclick="uploadServiceImage('${s.id}')"`:''}>${s.img?`<img src="${s.img}">`:'<span class="small">No image</span>'}</div><h3>${s.name}</h3>`;
+    box.appendChild(d);
+  });
+}
+
+function uploadProductImage(id){if(!isAdmin){alert('Admin only');return;}
+  const f=document.createElement('input');f.type='file';f.accept='image/*';
+  f.onchange=()=>{const r=new FileReader();r.onload=()=>{const p=products.find(x=>x.id===id);p.img=r.result;saveProducts();renderProducts();};r.readAsDataURL(f.files[0]);};f.click();
+}
+function uploadServiceImage(id){if(!isAdmin){alert('Admin only');return;}
+  const f=document.createElement('input');f.type='file';f.accept='image/*';
+  f.onchange=()=>{const r=new FileReader();r.onload=()=>{const s=services.find(x=>x.id===id);s.img=r.result;saveServices();renderServices();};r.readAsDataURL(f.files[0]);};f.click();
+}
+
+renderProducts(); renderServices();
+
+// ================= COURSE-TYPE SESSIONS =================
+const sessCourseType = document.getElementById('sessCourseType');
+function populateCourseTypes() {
+  sessCourseType.innerHTML = '<option value="">--Select Course Type--</option>';
+  for(const type in courses){
+    const opt = document.createElement('option');
+    opt.value = type;
+    opt.textContent = type;
+    sessCourseType.appendChild(opt);
+  }
+}
+
+// Save session under course type
+$('#saveSessionBtn').addEventListener('click',()=>{
+  const t = $('#sessTitle').value.trim();
+  const d = $('#sessDesc').value.trim();
+  const cType = sessCourseType.value;
+  if(!t){alert('Title required');return;}
+  if(!cType){alert('Select a course type');return;}
+
+  const session = {id: uid(), title: t, desc: d, image:'', video:'', file:''};
+
+  // Add to courses
+  if(!courses[cType]) courses[cType] = [];
+  courses[cType].push(session);
+  saveCourses();
+
+  // Also add to general sessions list for quick search
+  sessions.push({id:session.id, title:t, desc:d, course:cType});
+  saveData();
+
+  renderSessions('');
+  renderCourses();
+  sessionModal.classList.remove('show');
+});
+
+// Delete session
+function del(id){sessions=sessions.filter(x=>x.id!==id);saveData();renderSessions('');}
+renderCourses();
+</script>
+
+</body>
+</html>
