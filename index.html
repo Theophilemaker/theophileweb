@@ -162,7 +162,7 @@ nav{display:flex;gap:8px;flex-wrap:wrap}
   </div>
 </section>
 
-<!-- Session Modal -->
+<!-- Session Modal (with file & video upload) -->
 <div id="sessionModal" class="modal">
   <div class="dialog">
     <h3>New Session</h3>
@@ -171,6 +171,10 @@ nav{display:flex;gap:8px;flex-wrap:wrap}
     <select id="sessCourseType">
       <option value="">--Select Course Type--</option>
     </select><br><br>
+    <label class="small">Upload File (PDF, DOC, etc.)</label><br>
+    <input type="file" id="sessFile" accept=".pdf,.doc,.docx,.txt"><br><br>
+    <label class="small">Upload Video</label><br>
+    <input type="file" id="sessVideo" accept="video/*"><br><br>
     <button class="btn primary" id="saveSessionBtn">Save</button>
     <button class="btn" id="cancelSessionBtn">Cancel</button>
   </div>
@@ -194,6 +198,9 @@ let sessions=JSON.parse(localStorage.getItem(SESSIONS_KEY)||'[]');
 // ================= SESSIONS =================
 const sessionsList = $('#sessionsList');
 const sessionModal = $('#sessionModal');
+const fileInput = document.getElementById('sessFile');
+const videoInput = document.getElementById('sessVideo');
+
 function saveData(){localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions))}
 function uid(){return 's_'+Math.random().toString(36).slice(2,9)}
 
@@ -204,7 +211,7 @@ function renderSessions(filter=''){
   if(out.length===0){sessionsList.innerHTML='<div class="small">No sessions found.</div>';return;}
   out.forEach(s=>{
     const d=document.createElement('div');d.className='card';
-    d.innerHTML=`<h3>${s.title}</h3><div class="small">${s.desc}</div>${isAdmin?`<button class="btn" onclick="del('${s.id}')">Delete</button>`:''}`;
+    d.innerHTML=`<h3>${s.title}</h3><div class="small">${s.desc}</div>${s.file?`<a class="link-btn" href="${s.file}" download>Download File</a>`:''}${s.video?`<video src="${s.video}" controls style="width:100%;margin-top:6px"></video>`:''}${isAdmin?`<button class="btn" onclick="del('${s.id}')">Delete</button>`:''}`;
     sessionsList.appendChild(d);
   });
 }
@@ -248,6 +255,7 @@ $('#adminBtn').addEventListener('click',()=>{
   } else alert('Wrong password');
 });
 
+// Logo
 function loadLogo(){
   const src=localStorage.getItem('tm_logo');
   if(src){$('#logoImg').src=src;$('#logoImg').style.display='block';$('#logoText').style.display='none';}
@@ -314,7 +322,7 @@ function populateCourseTypes() {
   }
 }
 
-// Save session under course type
+// Save session under course type with file/video
 $('#saveSessionBtn').addEventListener('click',()=>{
   const t = $('#sessTitle').value.trim();
   const d = $('#sessDesc').value.trim();
@@ -322,20 +330,50 @@ $('#saveSessionBtn').addEventListener('click',()=>{
   if(!t){alert('Title required');return;}
   if(!cType){alert('Select a course type');return;}
 
-  const session = {id: uid(), title: t, desc: d, image:'', video:'', file:''};
+  const session = {id: uid(), title: t, desc: d, image:'', file:'', video:''};
 
-  // Add to courses
-  if(!courses[cType]) courses[cType] = [];
-  courses[cType].push(session);
-  saveCourses();
+  // Handle file input
+  if(fileInput.files[0]){
+    const reader = new FileReader();
+    reader.onload = () => {
+      session.file = reader.result;
+      handleVideo();
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else handleVideo();
 
-  // Also add to general sessions list for quick search
-  sessions.push({id:session.id, title:t, desc:d, course:cType});
-  saveData();
+  function handleVideo(){
+    if(videoInput.files[0]){
+      const vReader = new FileReader();
+      vReader.onload = () => {
+        session.video = vReader.result;
+        saveSession();
+      };
+      vReader.readAsDataURL(videoInput.files[0]);
+    } else saveSession();
+  }
 
-  renderSessions('');
-  renderCourses();
-  sessionModal.classList.remove('show');
+  function saveSession(){
+    // Add to courses
+    if(!courses[cType]) courses[cType] = [];
+    courses[cType].push(session);
+    saveCourses();
+
+    // Also add to general sessions list for search
+    sessions.push({id:session.id, title:t, desc:d, course:cType, file:session.file, video:session.video});
+    saveData();
+
+    renderSessions('');
+    renderCourses();
+    sessionModal.classList.remove('show');
+
+    // Reset modal
+    $('#sessTitle').value='';
+    $('#sessDesc').value='';
+    sessCourseType.value='';
+    fileInput.value='';
+    videoInput.value='';
+  }
 });
 
 // Delete session
