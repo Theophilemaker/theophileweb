@@ -184,201 +184,238 @@ nav{display:flex;gap:8px;flex-wrap:wrap}
 Built for THEOPHILEMAKER • theophilen298@gmail.com
 </div>
 
-<script>
-// ================= DATA =================
-const ADMIN_PASSWORD = 'theo@123';
-const SESSIONS_KEY = 'tm_sessions_v1';
-const PRODUCTS_KEY = 'tm_products_v1';
-const SERVICES_KEY = 'tm_services_v1';
-const COURSES_KEY = 'tm_courses_v1';
-const $ = s => document.querySelector(s);
-let isAdmin=false;
-let sessions=JSON.parse(localStorage.getItem(SESSIONS_KEY)||'[]');
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-storage.js";
 
-// ================= SESSIONS =================
+// ================== FIREBASE CONFIG ==================
+const firebaseConfig = {
+  apiKey: "AIzaSyC4C2uWND_pfmPmz5Yr5SZ2hGNTH_MahXs",
+  authDomain: "theophilemaker.firebaseapp.com",
+  projectId: "theophilemaker",
+  storageBucket: "theophilemaker.firebasestorage.app",
+  messagingSenderId: "877489083781",
+  appId: "1:877489083781:web:8d2baa4d9a15c23b33a0ec"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// ================== CONSTANTS ==================
+const ADMIN_PASSWORD = 'theo@123';
+let isAdmin = false;
+let sessions = [], courses = {}, products = [], services = [];
+
+// Default items from your old file
+const defaultCourses = {
+  "Programming": ["Python", "HTML", "JavaScript", "Java", "Visual Basic", "C++", "CSS"],
+  "Database": ["MySQL", "SQL Server"],
+  "Data Science": ["Statistics", "Mathematics", "Probability"]
+};
+const defaultProducts = ['Telephone Batteries','Electrical Chargers','Computer Accessories','Keyboards & Mouse','Flash Disks'];
+const defaultServices = ['Software Installation','Software Development','Computer Maintenance','System Analysis & Design'];
+
+// ================== FIREBASE HELPERS ==================
+async function loadCollection(name){
+  const snap = await getDocs(collection(db,name));
+  return snap.docs.map(d => d.data());
+}
+async function saveDoc(col,id,data){
+  await setDoc(doc(db,col,id), {...data, timestamp: serverTimestamp()});
+}
+async function uploadFile(file,path){
+  const fileRef = ref(storage,path);
+  await uploadBytes(fileRef,file);
+  return await getDownloadURL(fileRef);
+}
+
+// ================== INITIAL LOAD ==================
+async function loadData(){
+  // Load sessions
+  sessions = await loadCollection('sessions');
+
+  // Load courses
+  const courseDocs = await loadCollection('courses');
+  courses = {};
+  if(courseDocs.length === 0){
+    // Prepopulate default courses
+    for(const t in defaultCourses){
+      courses[t] = [];
+      defaultCourses[t].forEach((name,i)=>{
+        const c = {id: t+'_'+i, name, file:'', video:''};
+        courses[t].push(c);
+        saveDoc('courses', c.id, {...c,type:t});
+      });
+    }
+  } else {
+    courseDocs.forEach(c=>{ 
+      if(!courses[c.type]) courses[c.type]=[];
+      courses[c.type].push(c);
+    });
+  }
+
+  // Load products
+  const productDocs = await loadCollection('products');
+  if(productDocs.length===0){
+    products = defaultProducts.map((name,i)=>({id:'p'+i,name,img:''}));
+    products.forEach(p => saveDoc('products',p.id,p));
+  } else products = productDocs;
+
+  // Load services
+  const serviceDocs = await loadCollection('services');
+  if(serviceDocs.length===0){
+    services = defaultServices.map((name,i)=>({id:'s'+i,name,img:''}));
+    services.forEach(s => saveDoc('services',s.id,s));
+  } else services = serviceDocs;
+
+  renderAll();
+}
+loadData();
+
+// ================== DOM SELECTORS ==================
+const $ = s => document.querySelector(s);
 const sessionsList = $('#sessionsList');
 const sessionModal = $('#sessionModal');
-const fileInput = document.getElementById('sessFile');
-const videoInput = document.getElementById('sessVideo');
+const sessCourseType = $('#sessCourseType');
+const fileInput = $('#sessFile');
+const videoInput = $('#sessVideo');
 
-function saveData(){localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions))}
-function uid(){return 's_'+Math.random().toString(36).slice(2,9)}
+// ================== UTILS ==================
+function uid(){return 'id_'+Math.random().toString(36).slice(2,9);}
 
+// ================== RENDER FUNCTIONS ==================
 function renderSessions(filter=''){
   sessionsList.innerHTML='';
-  const q=filter.toLowerCase();
-  const out=sessions.filter(s=>s.title.toLowerCase().includes(q)||s.desc.toLowerCase().includes(q));
-  if(out.length===0){sessionsList.innerHTML='<div class="small">No sessions found.</div>';return;}
+  const q = filter.toLowerCase();
+  const out = sessions.filter(s => s.title.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q));
+  if(out.length===0){sessionsList.innerHTML='<div class="small">No sessions found.</div>'; return;}
   out.forEach(s=>{
-    const d=document.createElement('div');d.className='card';
-    d.innerHTML=`<h3>${s.title}</h3><div class="small">${s.desc}</div>${s.file?`<a class="link-btn" href="${s.file}" download>Download File</a>`:''}${s.video?`<video src="${s.video}" controls style="width:100%;margin-top:6px"></video>`:''}${isAdmin?`<button class="btn" onclick="del('${s.id}')">Delete</button>`:''}`;
+    const d = document.createElement('div'); d.className='card';
+    d.innerHTML=`<h3>${s.title}</h3><div class="small">${s.desc}</div>
+      ${s.file?`<a class="link-btn" href="${s.file}" download>Download File</a>`:''}
+      ${s.video?`<video src="${s.video}" controls style="width:100%;margin-top:6px"></video>`:''}`;
     sessionsList.appendChild(d);
   });
 }
-renderSessions('');
-$('#globalSearch').addEventListener('input',e=>renderSessions(e.target.value));
-$('#createSessionBtn').addEventListener('click',()=>{if(!isAdmin){alert('Admin only');return;}sessionModal.classList.add('show');});
-$('#cancelSessionBtn').onclick=()=>sessionModal.classList.remove('show');
-
-// ================= COURSES =================
-const defaultCourseTypes={"Programming":["Python","HTML","JavaScript","Java","Visual Basic","C++","CSS"],"Database":["MySQL","SQL Server"],"Data Science":["Statistics","Mathematics","Probability"]};
-let courses=JSON.parse(localStorage.getItem(COURSES_KEY)||'null');
-if(!courses){courses={};for(const t in defaultCourseTypes){courses[t]=defaultCourseTypes[t].map((n,i)=>({id:t+'_'+i,name:n,file:'',image:'',video:''}));}localStorage.setItem(COURSES_KEY,JSON.stringify(courses));}
-function saveCourses(){localStorage.setItem(COURSES_KEY, JSON.stringify(courses));}
 
 function renderCourses(){
-  const box=document.getElementById('courseTypes');box.innerHTML='';
+  const box = $('#courseTypes'); box.innerHTML='';
   for(const t in courses){
-    const wrap=document.createElement('div');wrap.style.display='flex';wrap.style.flexWrap='wrap';wrap.style.justifyContent='center';wrap.style.margin='12px';
+    const wrap = document.createElement('div');
+    wrap.style.display='flex'; wrap.style.flexWrap='wrap'; wrap.style.justifyContent='center'; wrap.style.margin='12px';
     wrap.innerHTML=`<h3 style="width:100%;text-align:center;margin-bottom:12px">${t}</h3>`;
     courses[t].forEach(sub=>{
-      const div=document.createElement('div');div.className='subject';
+      const div = document.createElement('div'); div.className='subject';
       div.innerHTML=`<h4>${sub.name}</h4>
-        ${sub.image?`<img src="${sub.image}" style="width:140px;border-radius:8px"><br>`:''}
-        ${sub.video?`<video src="${sub.video}" controls style="width:180px;margin-top:6px"></video><br>`:''}
-        ${sub.file?`<a class="link-btn" href="${sub.file}" download>Download File</a>`:''}`;
+        ${sub.file?`<a class="link-btn" href="${sub.file}" download>Download File</a>`:''}
+        ${sub.video?`<video src="${sub.video}" controls style="width:180px;margin-top:6px"></video>`:''}`;
       wrap.appendChild(div);
     });
     box.appendChild(wrap);
   }
 }
 
-// ================= ADMIN =================
-$('#adminBtn').addEventListener('click',()=>{
-  const p=prompt('Enter admin password');
-  if(p===ADMIN_PASSWORD){
-    isAdmin=true;
-    $('#adminBtn').textContent='Admin (ON)';
-    $('#adminBtn').style.background='#16a34a';
-    renderSessions(); renderProducts(); renderServices(); renderCourses();
-    populateCourseTypes();
-  } else alert('Wrong password');
-});
-
-// Logo
-function loadLogo(){
-  const src=localStorage.getItem('tm_logo');
-  if(src){$('#logoImg').src=src;$('#logoImg').style.display='block';$('#logoText').style.display='none';}
-  else{$('#logoImg').style.display='none';$('#logoText').style.display='block';}
-}
-loadLogo();
-$('#replaceLogoBtn').addEventListener('click',()=>{
-  if(!isAdmin){alert('Only admin can change logo');return;}
-  const f=document.createElement('input');f.type='file';f.accept='image/*';
-  f.onchange=()=>{const r=new FileReader();r.onload=()=>{localStorage.setItem('tm_logo',r.result);loadLogo();};r.readAsDataURL(f.files[0]);};
-  f.click();
-});
-$('#logoDrop').addEventListener('click',()=>{if(!isAdmin){alert('Only admin can change logo');return;}$('#replaceLogoBtn').click();});
-$('#downloadDataBtn').onclick=()=>{const blob=new Blob([JSON.stringify(sessions)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tm_data.json';a.click();};
-
-// ================= PRODUCTS & SERVICES =================
-const defaultProducts=['Telephone Batteries','Electrical Chargers','Computer Accessories','Keyboards & Mouse','Flash Disks'];
-const defaultServices=['Software Installation','Software Development','Computer Maintenance','System Analysis & Design'];
-let products=JSON.parse(localStorage.getItem(PRODUCTS_KEY)||'null');
-let services=JSON.parse(localStorage.getItem(SERVICES_KEY)||'null');
-if(!products) products=defaultProducts.map((n,i)=>({id:'p'+i,name:n,img:''}));
-if(!services) services=defaultServices.map((n,i)=>({id:'s'+i,name:n,img:''}));
-function saveProducts(){localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products))}
-function saveServices(){localStorage.setItem(SERVICES_KEY, JSON.stringify(services))}
-
 function renderProducts(){
-  const box=document.getElementById('productsGrid');box.innerHTML='';
+  const box = $('#productsGrid'); box.innerHTML='';
   products.forEach(p=>{
-    const d=document.createElement('div');d.className='card';
-    d.innerHTML=`<div class="item-img" ${isAdmin?`onclick="uploadProductImage('${p.id}')"`:''}>${p.img?`<img src="${p.img}">`:'<span class="small">No image</span>'}</div><h3>${p.name}</h3>`;
+    const d = document.createElement('div'); d.className='card';
+    d.innerHTML=`<div class="item-img" ${isAdmin?`onclick="uploadProductImage('${p.id}')"`:''}>
+      ${p.img?`<img src="${p.img}">`:'<span class="small">No image</span>'}
+      </div><h3>${p.name}</h3>`;
     box.appendChild(d);
   });
 }
 
 function renderServices(){
-  const box=document.getElementById('servicesGrid');box.innerHTML='';
+  const box = $('#servicesGrid'); box.innerHTML='';
   services.forEach(s=>{
-    const d=document.createElement('div');d.className='card';
-    d.innerHTML=`<div class="item-img" ${isAdmin?`onclick="uploadServiceImage('${s.id}')"`:''}>${s.img?`<img src="${s.img}">`:'<span class="small">No image</span>'}</div><h3>${s.name}</h3>`;
+    const d = document.createElement('div'); d.className='card';
+    d.innerHTML=`<div class="item-img" ${isAdmin?`onclick="uploadServiceImage('${s.id}')"`:''}>
+      ${s.img?`<img src="${s.img}">`:'<span class="small">No image</span>'}
+      </div><h3>${s.name}</h3>`;
     box.appendChild(d);
   });
 }
 
-function uploadProductImage(id){if(!isAdmin){alert('Admin only');return;}
-  const f=document.createElement('input');f.type='file';f.accept='image/*';
-  f.onchange=()=>{const r=new FileReader();r.onload=()=>{const p=products.find(x=>x.id===id);p.img=r.result;saveProducts();renderProducts();};r.readAsDataURL(f.files[0]);};f.click();
-}
-function uploadServiceImage(id){if(!isAdmin){alert('Admin only');return;}
-  const f=document.createElement('input');f.type='file';f.accept='image/*';
-  f.onchange=()=>{const r=new FileReader();r.onload=()=>{const s=services.find(x=>x.id===id);s.img=r.result;saveServices();renderServices();};r.readAsDataURL(f.files[0]);};f.click();
+function renderAll(){
+  renderSessions(); renderCourses(); renderProducts(); renderServices();
+  populateCourseTypes();
 }
 
-renderProducts(); renderServices();
+// ================== ADMIN ==================
+$('#adminBtn').addEventListener('click',()=>{
+  const p = prompt('Enter admin password');
+  if(p===ADMIN_PASSWORD){
+    isAdmin = true;
+    $('#adminBtn').textContent='Admin (ON)';
+    $('#adminBtn').style.background='#16a34a';
+    renderAll();
+  } else alert('Wrong password');
+});
 
-// ================= COURSE-TYPE SESSIONS =================
-const sessCourseType = document.getElementById('sessCourseType');
-function populateCourseTypes() {
+// ================== COURSE-TYPE SELECT ==================
+function populateCourseTypes(){
   sessCourseType.innerHTML = '<option value="">--Select Course Type--</option>';
-  for(const type in courses){
-    const opt = document.createElement('option');
-    opt.value = type;
-    opt.textContent = type;
+  for(const t in courses){
+    const opt = document.createElement('option'); opt.value=t; opt.textContent=t;
     sessCourseType.appendChild(opt);
   }
 }
 
-// Save session under course type with file/video
-$('#saveSessionBtn').addEventListener('click',()=>{
+// ================== SAVE SESSION ==================
+$('#saveSessionBtn').addEventListener('click', async ()=>{
   const t = $('#sessTitle').value.trim();
   const d = $('#sessDesc').value.trim();
   const cType = sessCourseType.value;
-  if(!t){alert('Title required');return;}
-  if(!cType){alert('Select a course type');return;}
+  if(!t || !cType){alert('Title and course type required'); return;}
+  
+  const session = {id: uid(), title:t, desc:d, course:cType, file:'', video:''};
 
-  const session = {id: uid(), title: t, desc: d, image:'', file:'', video:''};
+  if(fileInput.files[0]) session.file = await uploadFile(fileInput.files[0], `files/${session.id}_${fileInput.files[0].name}`);
+  if(videoInput.files[0]) session.video = await uploadFile(videoInput.files[0], `videos/${session.id}_${videoInput.files[0].name}`);
 
-  // Handle file input
-  if(fileInput.files[0]){
-    const reader = new FileReader();
-    reader.onload = () => {
-      session.file = reader.result;
-      handleVideo();
-    };
-    reader.readAsDataURL(fileInput.files[0]);
-  } else handleVideo();
+  // Save to Firestore
+  await saveDoc('sessions', session.id, session);
+  if(!courses[cType]) courses[cType] = [];
+  courses[cType].push(session);
+  await saveDoc('courses', session.id, {...session, type:cType});
 
-  function handleVideo(){
-    if(videoInput.files[0]){
-      const vReader = new FileReader();
-      vReader.onload = () => {
-        session.video = vReader.result;
-        saveSession();
-      };
-      vReader.readAsDataURL(videoInput.files[0]);
-    } else saveSession();
-  }
+  sessions.push(session);
+  renderAll();
+  sessionModal.classList.remove('show');
 
-  function saveSession(){
-    // Add to courses
-    if(!courses[cType]) courses[cType] = [];
-    courses[cType].push(session);
-    saveCourses();
-
-    // Also add to general sessions list for search
-    sessions.push({id:session.id, title:t, desc:d, course:cType, file:session.file, video:session.video});
-    saveData();
-
-    renderSessions('');
-    renderCourses();
-    sessionModal.classList.remove('show');
-
-    // Reset modal
-    $('#sessTitle').value='';
-    $('#sessDesc').value='';
-    sessCourseType.value='';
-    fileInput.value='';
-    videoInput.value='';
-  }
+  $('#sessTitle').value=''; $('#sessDesc').value=''; sessCourseType.value=''; fileInput.value=''; videoInput.value='';
 });
 
-// Delete session
-function del(id){sessions=sessions.filter(x=>x.id!==id);saveData();renderSessions('');}
-renderCourses();
+// ================== UPLOAD IMAGES ==================
+async function uploadProductImage(id){
+  if(!isAdmin){alert('Admin only'); return;}
+  const f = document.createElement('input'); f.type='file'; f.accept='image/*';
+  f.onchange = async ()=>{
+    const imgUrl = await uploadFile(f.files[0], `products/${id}_${f.files[0].name}`);
+    const p = products.find(x=>x.id===id); p.img=imgUrl;
+    await saveDoc('products',id,p);
+    renderProducts();
+  }; f.click();
+}
+async function uploadServiceImage(id){
+  if(!isAdmin){alert('Admin only'); return;}
+  const f = document.createElement('input'); f.type='file'; f.accept='image/*';
+  f.onchange = async ()=>{
+    const s = services.find(x=>x.id===id);
+    s.img = await uploadFile(f.files[0], `services/${id}_${f.files[0].name}`);
+    await saveDoc('services',id,s);
+    renderServices();
+  }; f.click();
+}
+
+// ================== SEARCH ==================
+$('#globalSearch').addEventListener('input', e=> renderSessions(e.target.value));
+
+// ================== CREATE SESSION ==================
+$('#createSessionBtn').addEventListener('click', ()=>{if(!isAdmin){alert('Admin only'); return;} sessionModal.classList.add('show');});
+$('#cancelSessionBtn').onclick = ()=>sessionModal.classList.remove('show');
 </script>
 
 </body>
